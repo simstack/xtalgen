@@ -11,7 +11,7 @@ from vasp.lib.cli import attach_file
 from vasp.lib.write_win import write_wannier90_wins
 from vasp.models.wannier90_input import Wannier90RunInput
 
-a
+
 @node
 async def wannier90_run(opts: Wannier90RunInput, **kwargs) -> SimstackResult:
     """
