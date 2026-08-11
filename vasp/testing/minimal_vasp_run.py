@@ -1,7 +1,5 @@
 """Minimal VASP fixtures and a helper to submit ``vasp_run``."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from simstack.core.context import context
@@ -47,12 +45,36 @@ def minimal_vasp_job_input(
     *,
     poscar: FileStack | None = None,
     potcar: FileStack | None = None,
+    potcar_autobuild: bool = False,
     incar: VaspIncarParams | None = None,
     kpoints: VaspKpointsParams | None = None,
 ) -> VaspJobInput:
     """Build a small static ``VaspJobInput`` using test fixtures by default."""
+    if potcar_autobuild:
+        return VaspJobInput(
+            poscar=poscar or fixture_poscar(),
+            potcar_autobuild=True,
+            potcar=None,
+            incar=incar
+            or VaspIncarParams(
+                encut=200.0,
+                ediff=1e-4,
+                ismear=0,
+                sigma=0.05,
+                ispin=1,
+                nsw=0,
+                ibrion=-1,
+                nelm=40,
+                lwannier90=False,
+                lwrite_mmn_amn=False,
+                lwrite_unk=False,
+                lsorbit=False,
+            ),
+            kpoints=kpoints or VaspKpointsParams(nx=1, ny=1, nz=1),
+        )
     return VaspJobInput(
         poscar=poscar or fixture_poscar(),
+        potcar_autobuild=False,
         potcar=potcar or fixture_potcar(),
         incar=incar
         or VaspIncarParams(

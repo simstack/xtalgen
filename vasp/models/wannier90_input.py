@@ -1,7 +1,5 @@
 """Wannier90 input / run models for VASP workflows."""
 
-from __future__ import annotations
-
 from enum import Enum
 from typing import Optional
 

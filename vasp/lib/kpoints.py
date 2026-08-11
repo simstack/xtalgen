@@ -1,14 +1,12 @@
 """Render VASP KPOINTS mesh file."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from vasp.models.vasp_input import VaspKpointsParams
+    from vasp.models.vasp_common import VaspKpointsParams
 
 
-def render_kpoints(params: VaspKpointsParams) -> str:
+def render_kpoints(params: "VaspKpointsParams") -> str:
     """Automatic mesh KPOINTS (Gamma or Monkhorst)."""
     style = params.style.value if hasattr(params.style, "value") else str(params.style)
     return (

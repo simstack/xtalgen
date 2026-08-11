@@ -1,7 +1,5 @@
 """Parse Fermi energy from VASP OUTCAR."""
 
-from __future__ import annotations
-
 import re
 from pathlib import Path
 

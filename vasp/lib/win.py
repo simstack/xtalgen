@@ -1,7 +1,5 @@
 """Render Wannier90 .win files for VASP workflows."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,7 +10,7 @@ def _bool(v: bool) -> str:
     return "true" if v else "false"
 
 
-def render_wannier90_win(params: Wannier90WinParams) -> str:
+def render_wannier90_win(params: "Wannier90WinParams") -> str:
     """
     Build a Wannier90 ``.win`` body.
 

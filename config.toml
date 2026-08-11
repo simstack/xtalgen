@@ -81,6 +81,9 @@ scratch_cleanup = true
 use_tmp = true
 environment_modules = ["vasp"]
 run_command = "module load vasp && vasp_std"
+# PAW library for potcar_autobuild (also accepted as poscar_dir)
+potcar_dir = "/shared/software/chem/vasp/potpaw_PBE.54"
+poscar_dir = "/shared/software/chem/vasp/potpaw_PBE.54"
 
 [xtalgen-int-nano.program.wannier90]
 use_tmp = true

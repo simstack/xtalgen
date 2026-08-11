@@ -1,7 +1,5 @@
 """Top-level VASP job input model."""
 
-from __future__ import annotations
-
 from typing import Optional
 
 from odmantic import Field, Model, Reference
@@ -37,7 +35,10 @@ class VaspJobInput(Model):
     """
     Inputs for a VASP working directory (cwd).
 
-    ``poscar`` and ``potcar`` are required FileStack references.
+    ``poscar`` is required. ``potcar`` is required unless ``potcar_autobuild``
+    is True (then POTCAR is built from POSCAR species using
+    ``[*.program.vasp] potcar_dir``).
+
     Set ``use_incar_file`` / ``use_kpoints_file`` to bypass generated content.
     Set ``use_extra_files`` to stage additional files (e.g. wannier90*.win).
 
@@ -50,7 +51,17 @@ class VaspJobInput(Model):
     incar: VaspIncarParams = Field(default_factory=VaspIncarParams)
     kpoints: VaspKpointsParams = Field(default_factory=VaspKpointsParams)
     poscar: FileStack = Reference()
-    potcar: FileStack = Reference()
+    potcar_autobuild: bool = Field(
+        False,
+        json_schema_extra={"title": "Autobuild POTCAR from POSCAR"},
+        description=(
+            "Build POTCAR from POSCAR species using "
+            "[*.program.vasp] potcar_dir (no potcar upload)"
+        ),
+    )
+    potcar: Optional[FileStack] = Field(
+        None, description="POTCAR FileStack (required when potcar_autobuild is False)"
+    )
     use_incar_file: bool = Field(
         False,
         json_schema_extra={"title": "Use pre-built INCAR file"},
@@ -82,6 +93,12 @@ class VaspJobInput(Model):
         if "field_name" not in data:
             data["field_name"] = cls.__name__
 
+        if "potcar_autobuild" not in data:
+            # Legacy docs always had potcar; treat missing flag as upload mode.
+            data["potcar_autobuild"] = data.get("potcar") is None
+        if data.get("potcar_autobuild"):
+            data["potcar"] = None
+
         if "use_incar_file" not in data:
             data["use_incar_file"] = data.get("incar_file") is not None
         if not data.get("use_incar_file"):
@@ -104,6 +121,12 @@ class VaspJobInput(Model):
 
         return data
 
+    @model_validator(mode="after")
+    def require_potcar_or_autobuild(self):
+        if not self.potcar_autobuild and self.potcar is None:
+            raise ValueError("potcar is required when potcar_autobuild is False")
+        return self
+
     def incar_text(self) -> str:
         return render_incar(self.incar)
 
@@ -113,11 +136,9 @@ class VaspJobInput(Model):
     @classmethod
     def json_schema(cls, recursive=True):
         """
-        JSON schema with optional file inputs gated by use_* dependencies.
+        JSON schema with optional file inputs gated by use_* / potcar_autobuild.
 
-        When ``use_incar_file`` / ``use_kpoints_file`` are True, the matching
-        file field is required and the generated params are hidden (and vice
-        versa). ``extra_files`` appears only when ``use_extra_files`` is True.
+        When ``potcar_autobuild`` is True, hide ``potcar``; when False, show it.
         """
         schema = cleaned_json_schema(cls)
         schema["title"] = cls.__name__
@@ -132,6 +153,7 @@ class VaspJobInput(Model):
         kpoints_file_schema = _unwrap_optional_schema(
             prop_schemas.pop("kpoints_file", None)
         )
+        potcar_schema = _unwrap_optional_schema(prop_schemas.pop("potcar", None))
         extra_files_schema = _unwrap_optional_schema(
             prop_schemas.pop("extra_files", None)
         )
@@ -141,6 +163,21 @@ class VaspJobInput(Model):
 
         schema["dependencies"].update(
             {
+                "potcar_autobuild": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "potcar_autobuild": {"const": False},
+                                "potcar": potcar_schema,
+                            }
+                        },
+                        {
+                            "properties": {
+                                "potcar_autobuild": {"const": True},
+                            }
+                        },
+                    ]
+                },
                 "use_incar_file": {
                     "oneOf": [
                         {
@@ -199,6 +236,14 @@ class VaspJobInput(Model):
 
         ui_schema["field_name"] = {"ui:widget": "hidden"}
 
+        ui_schema["potcar_autobuild"] = {
+            "ui:widget": "checkbox",
+            "ui:title": "Autobuild POTCAR from POSCAR",
+        }
+        ui_schema.setdefault("potcar", {})["ui:condition"] = {
+            "potcar_autobuild": False
+        }
+
         ui_schema["use_incar_file"] = {
             "ui:widget": "checkbox",
             "ui:title": "Use pre-built INCAR file",
@@ -230,6 +275,7 @@ class VaspJobInput(Model):
 
         ui_schema["ui:order"] = [
             "poscar",
+            "potcar_autobuild",
             "potcar",
             "use_incar_file",
             "incar",

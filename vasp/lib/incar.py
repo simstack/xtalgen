@@ -1,18 +1,16 @@
 """Render VASP INCAR from a parameter model."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from vasp.models.vasp_input import VaspIncarParams
+    from vasp.models.vasp_common import VaspIncarParams
 
 
 def _bool(v: bool) -> str:
     return ".TRUE." if v else ".FALSE."
 
 
-def render_incar(params: VaspIncarParams) -> str:
+def render_incar(params: "VaspIncarParams") -> str:
     """Return INCAR text (no trailing blank requirement)."""
     lines: list[str] = [
         "INCAR written by xtalgen.vasp",

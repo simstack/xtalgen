@@ -1,7 +1,5 @@
 """Write Wannier90 .win files (plain helper — not a @node)."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from simstack.models.file_list import FileListModel

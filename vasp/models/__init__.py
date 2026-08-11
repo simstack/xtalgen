@@ -1,5 +1,6 @@
 from vasp.models.vasp_common import KpointsStyle, VaspIncarParams, VaspKpointsParams
 from vasp.models.vasp_input import VaspJobInput
+from vasp.models.vasp_wannier_minimal import VaspWannierMinimalInput
 from vasp.models.wannier90_input import (
     StageWannierForTB2JInput,
     Wannier90Channel,
@@ -13,6 +14,7 @@ __all__ = [
     "VaspIncarParams",
     "VaspKpointsParams",
     "VaspJobInput",
+    "VaspWannierMinimalInput",
     "Wannier90Channel",
     "Wannier90WinParams",
     "Wannier90WinInput",

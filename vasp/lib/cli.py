@@ -1,7 +1,5 @@
 """CLI helpers for VASP / Wannier90 nodes."""
 
-from __future__ import annotations
-
 import os
 import shlex
 import shutil

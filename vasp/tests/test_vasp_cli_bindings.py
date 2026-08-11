@@ -135,6 +135,59 @@ def test_vasp_job_input_requires_poscar_potcar():
         )
 
 
+def test_vasp_job_input_potcar_autobuild(tmp_path):
+    poscar, _potcar = _dummy_poscar_potcar(tmp_path)
+    job = VaspJobInput(
+        poscar=poscar,
+        potcar_autobuild=True,
+        incar=VaspIncarParams(encut=300),
+        kpoints=VaspKpointsParams(nx=2, ny=2, nz=2),
+    )
+    assert job.potcar is None
+    assert job.potcar_autobuild is True
+
+
+def test_vasp_job_input_requires_potcar_without_autobuild(tmp_path):
+    import pytest
+    from pydantic import ValidationError
+
+    poscar, _ = _dummy_poscar_potcar(tmp_path)
+    with pytest.raises(ValidationError):
+        VaspJobInput(
+            poscar=poscar,
+            potcar_autobuild=False,
+            potcar=None,
+            incar=VaspIncarParams(encut=300),
+            kpoints=VaspKpointsParams(nx=2, ny=2, nz=2),
+        )
+
+
+def test_parse_poscar_elements_and_build_potcar(tmp_path):
+    from vasp.lib.potcar import build_potcar_from_poscar, parse_poscar_elements
+    from vasp.testing.minimal_vasp_run import POSCAR_PATH
+
+    assert parse_poscar_elements(POSCAR_PATH) == ["Fe"]
+
+    lib = tmp_path / "potpaw"
+    fe_dir = lib / "Fe"
+    fe_dir.mkdir(parents=True)
+    (fe_dir / "POTCAR").write_text("FAKE_FE_POTCAR\n", encoding="utf-8")
+    o_dir = lib / "O"
+    o_dir.mkdir()
+    (o_dir / "POTCAR").write_text("FAKE_O_POTCAR\n", encoding="utf-8")
+
+    pos = tmp_path / "POSCAR"
+    pos.write_text(
+        "test\n1.0\n1 0 0\n0 1 0\n0 0 1\nFe O\n1 1\nDirect\n0 0 0\n0.5 0.5 0.5\n",
+        encoding="utf-8",
+    )
+    out, elements = build_potcar_from_poscar(pos, lib, tmp_path / "POTCAR")
+    assert elements == ["Fe", "O"]
+    text = out.read_text(encoding="utf-8")
+    assert text.startswith("FAKE_FE_POTCAR")
+    assert "FAKE_O_POTCAR" in text
+
+
 def test_write_vasp_inputs_helper(tmp_path):
     poscar, potcar = _dummy_poscar_potcar(tmp_path)
     job = VaspJobInput(
@@ -142,6 +195,7 @@ def test_write_vasp_inputs_helper(tmp_path):
         kpoints=VaspKpointsParams(nx=2, ny=2, nz=2),
         poscar=poscar,
         potcar=potcar,
+        potcar_autobuild=False,
     )
     assert job.poscar is poscar
     assert job.potcar is potcar
@@ -161,3 +215,37 @@ def test_write_wannier90_wins_helper(tmp_path):
     assert "num_wann = 4" in up
     assert "spinors = false" in up
     assert "spinors = true" in spinor
+
+
+def test_minimal_vasp_wannier_job_input(tmp_path):
+    """Builder stages Fe .win into VASP extras; Wannier reuses VASP outputs."""
+    from vasp.testing.minimal_vasp_wannier_run import minimal_vasp_wannier_job_input
+
+    poscar, potcar = _dummy_poscar_potcar(tmp_path)
+    opts = minimal_vasp_wannier_job_input(
+        poscar=poscar, potcar=potcar, potcar_autobuild=False
+    )
+
+    assert opts.vasp.incar.lwannier90 is True
+    assert opts.vasp.incar.lwrite_mmn_amn is True
+    assert opts.vasp.incar.ispin == 1
+    assert opts.vasp.incar.nbands == 16
+    assert opts.vasp.use_extra_files is True
+    extras = list(opts.vasp.extra_files)
+    assert len(extras) == 1
+    assert extras[0].name == "wannier90.win"
+
+    assert opts.wannier.channels == "wannier90"
+    assert opts.wannier.write_win is False
+    assert opts.wannier.win.num_wann == 5
+    assert "Fe:d" in opts.wannier.win.projections
+    assert "LWANNIER90 = .TRUE." in opts.vasp.incar_text()
+
+
+def test_minimal_vasp_wannier_job_input_autobuild(tmp_path):
+    from vasp.testing.minimal_vasp_wannier_run import minimal_vasp_wannier_job_input
+
+    poscar, _ = _dummy_poscar_potcar(tmp_path)
+    opts = minimal_vasp_wannier_job_input(poscar=poscar, potcar_autobuild=True)
+    assert opts.vasp.potcar_autobuild is True
+    assert opts.vasp.potcar is None
