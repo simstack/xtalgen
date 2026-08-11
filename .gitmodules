@@ -1,6 +1,0 @@
-[submodule "vendor/TB2J"]
-	path = vendor/TB2J
-	url = https://github.com/mailhexu/TB2J.git
-[submodule "vendor/TB2J_examples"]
-	path = vendor/TB2J_examples
-	url = https://github.com/mailhexu/TB2J_examples.git

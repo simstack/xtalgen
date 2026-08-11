@@ -1,0 +1,81 @@
+[project]
+name = "xtalgen"
+version = "0.2.0"
+description = "Crystal / magnetism DFT wrappers (VASP, Wannier90, TB2J) for Simstack"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+  { name = "Wolfgang Wenzel", email = "wolfgang.wenzel@kit.edu" }
+]
+dependencies = [
+    "simstack",
+    "TB2J",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.1",
+    "pytest-asyncio>=1.3.0",
+]
+# Siesta / netCDF path (sisl needs a native build — typically Linux / conda).
+siesta = [
+    "sisl>=0.16.2",
+    "netcdf4",
+]
+
+[project.entry-points."simstack.modules"]
+tbj2 = "tbj2"
+vasp = "vasp"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[tool.hatch.build.targets.wheel.force-include]
+"tbj2/__init__.py" = "tbj2/__init__.py"
+"tbj2/nodes" = "tbj2/nodes"
+"tbj2/models" = "tbj2/models"
+"tbj2/lib" = "tbj2/lib"
+"tbj2/testing" = "tbj2/testing"
+"vasp/__init__.py" = "vasp/__init__.py"
+"vasp/nodes" = "vasp/nodes"
+"vasp/models" = "vasp/models"
+"vasp/lib" = "vasp/lib"
+"vasp/testing" = "vasp/testing"
+
+[tool.uv.sources]
+# Sibling tree when xtalgen lives under simstack-model; override for standalone clones.
+simstack = { path = "../simstack", editable = true }
+TB2J = { git = "https://github.com/mailhexu/TB2J.git" }
+
+# Upstream TB2J declares sisl/pypao/pre-commit as hard deps; Wannier path does not
+# need them, and sisl fails to build on Windows. Strip those from resolution.
+[[tool.uv.dependency-metadata]]
+name = "TB2J"
+requires-dist = [
+    "numpy",
+    "scipy>=1.9,<1.17",
+    "matplotlib",
+    "ase>=3.19",
+    "tqdm",
+    "pathos",
+    "packaging>=20.0",
+    "HamiltonIO>=0.3.8",
+    "sympair>=0.1.4",
+    "supercellmap",
+    "tomli>=2.0.0",
+    "tomli-w>=1.0.0",
+    "typing_extensions",
+    "h5py",
+]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
