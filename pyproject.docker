@@ -1,0 +1,48 @@
+# Container-only install manifest (dual-use capability package).
+# Host: no pyproject.toml — flat tree under simstack-model for create_*_table.
+# Image: Dockerfile copies this to pyproject.toml, then `uv pip install .`
+# (hatch force-include + deps from git via [tool.uv.sources]).
+#
+# Layout: Dockerfile / vendor / this file live in xtalgen/; the installable
+# package is the nested tbj2/ tree (nodes, models, lib, …).
+[project]
+name = "tbj2"
+version = "0.1.0"
+description = "TB2J magnetic exchange parameters within the Simstack framework"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+  { name = "Wolfgang Wenzel", email = "wolfgang.wenzel@kit.edu" }
+]
+dependencies = [
+    "simstack",
+]
+
+[project.entry-points."simstack.modules"]
+tbj2 = "tbj2"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[tool.hatch.build.targets.wheel.force-include]
+"tbj2/__init__.py" = "tbj2/__init__.py"
+"tbj2/nodes" = "tbj2/nodes"
+"tbj2/models" = "tbj2/models"
+"tbj2/lib" = "tbj2/lib"
+"tbj2/testing" = "tbj2/testing"
+
+[tool.uv.sources]
+simstack = { git = "https://github.com/simstack/simstack.git", rev = "fix-git-pull" }
+
+[tool.uv]
+override-dependencies = [
+    "simstack @ git+https://github.com/simstack/simstack.git@fix-git-pull",
+]
