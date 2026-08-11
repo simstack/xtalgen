@@ -3,8 +3,7 @@
     {
       "name": "Default",
       "files": [
-        "pyproject.toml",
-        ".vscode/changelists.json"
+        "pyproject.toml"
       ]
     }
   ],

@@ -56,6 +56,10 @@ constraint-dependencies = [
     "netcdf4<=1.7.2",
 ]
 
+override-dependencies = [
+    "numpy==2.2.6",
+]
+
 # version is required for Git dependencies (matches TB2J's pyproject on main).
 [[tool.uv.dependency-metadata]]
 name = "TB2J"
