@@ -54,4 +54,4 @@ async def vasp_wannier_minimal(
         return node_runner.succeed()
     except Exception as exc:
         node_runner.error(f"vasp_wannier_minimal: {exc}")
-        return node_runner.fail(error_message=str(exc))
+        return node_runner.fail(str(exc))

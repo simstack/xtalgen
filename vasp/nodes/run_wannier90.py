@@ -80,4 +80,4 @@ async def wannier90_run(opts: Wannier90RunInput, **kwargs) -> SimstackResult:
         return node_runner.succeed()
     except Exception as exc:
         node_runner.error(f"wannier90_run: {exc}")
-        return node_runner.fail(error_message=str(exc))
+        return node_runner.fail(str(exc))

@@ -36,4 +36,4 @@ async def tb2j_siesta(opts: SiestaInput, **kwargs) -> SimstackResult:
         return node_runner.succeed()
     except Exception as exc:
         node_runner.error(f"tb2j_siesta: {exc}")
-        return node_runner.fail(error_message=str(exc))
+        return node_runner.fail(str(exc))

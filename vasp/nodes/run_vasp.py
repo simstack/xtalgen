@@ -108,4 +108,4 @@ async def vasp_run(opts: VaspJobInput, **kwargs) -> SimstackResult:
         return node_runner.succeed()
     except Exception as exc:
         node_runner.error(f"vasp_run: {exc}")
-        return node_runner.fail(error_message=str(exc))
+        return node_runner.fail(str(exc))

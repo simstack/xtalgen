@@ -38,4 +38,4 @@ async def tb2j_wannier_spinor(opts: WannierSpinorInput, **kwargs) -> SimstackRes
         return node_runner.succeed()
     except Exception as exc:
         node_runner.error(f"tb2j_wannier_spinor: {exc}")
-        return node_runner.fail(error_message=str(exc))
+        return node_runner.fail(str(exc))

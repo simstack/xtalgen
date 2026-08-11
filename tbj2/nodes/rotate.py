@@ -60,4 +60,4 @@ async def tb2j_rotate(opts: TB2JRotateInput, **kwargs) -> SimstackResult:
         return node_runner.succeed()
     except Exception as exc:
         node_runner.error(f"tb2j_rotate: {exc}")
-        return node_runner.fail(error_message=str(exc))
+        return node_runner.fail(str(exc))
