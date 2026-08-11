@@ -55,10 +55,15 @@ bypass-selection = true
 simstack = { path = "../simstack", editable = true }
 TB2J = { git = "https://github.com/mailhexu/TB2J.git" }
 
-# Upstream TB2J declares sisl/pypao/pre-commit as hard deps; Wannier path does not
-# need them, and sisl fails to build on Windows. Strip those from resolution.
+[tool.uv]
+# sisl needs a native build (fails on Windows); pypao is not on PyPI; pre-commit is a
+# misplaced hard dep upstream. Wannier workflows do not need any of these.
+exclude-dependencies = ["sisl", "pypao", "pre-commit"]
+
+# version is required for Git dependencies (matches TB2J's pyproject on main).
 [[tool.uv.dependency-metadata]]
 name = "TB2J"
+version = "0.9.19"
 requires-dist = [
     "numpy",
     "scipy>=1.9,<1.17",

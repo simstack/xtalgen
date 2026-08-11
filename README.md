@@ -19,20 +19,31 @@ xtalgen/
 ## Install
 
 ```bash
-uv sync
+uv sync                 # from this directory
 # or: uv pip install -e ".[dev]"
 ```
 
 Pulls editable `simstack` from `../simstack` and [TB2J](https://github.com/mailhexu/TB2J)
-from GitHub. Siesta support (sisl) is optional: `uv sync --extra siesta`.
+from GitHub. Upstream hard-deps `sisl` / `pypao` are excluded for the Wannier path
+(`tool.uv.exclude-dependencies`); add `--extra siesta` when you need Siesta.
 
 VASP and `wannier90.x` are external binaries — put them on `PATH` / configure
 `[*.program.vasp]` in `config.toml`.
+
+Examples live upstream (not vendored): https://github.com/mailhexu/TB2J_examples
 
 Inside the `simstack-model` monorepo:
 
 ```bash
 uv pip install -e "./xtalgen[dev]"
+```
+
+If resolver hits `pypao`/`sisl` (those settings apply to `uv sync`, not always to
+`uv pip`), install TB2J separately:
+
+```bash
+uv pip install -e "./xtalgen[dev]" --no-deps
+uv pip install "TB2J @ git+https://github.com/mailhexu/TB2J.git" --no-deps
 ```
 
 ## VASP + Wannier90 nodes
