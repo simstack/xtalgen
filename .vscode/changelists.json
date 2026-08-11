@@ -2,46 +2,7 @@
   "changelists": [
     {
       "name": "Default",
-      "files": [
-        "README.md",
-        "pyproject.toml",
-        "uv.lock",
-        ".idea/.gitignore",
-        ".idea/inspectionProfiles/Project_Default.xml",
-        ".idea/inspectionProfiles/profiles_settings.xml",
-        ".idea/misc.xml",
-        ".idea/modules.xml",
-        ".idea/vcs.xml",
-        ".idea/xtalgen.iml",
-        "simstack.toml",
-        ".vscode/changelists.json",
-        "config.toml",
-        "master/__init__.py",
-        "master/models/__init__.py",
-        "master/models/workflow_input.py",
-        "master/nodes/__init__.py",
-        "master/nodes/vasp_wannier_tb2j.py",
-        ".python-version",
-        "node_models.txt",
-        "tbj2/models/siesta_input.py",
-        "tbj2/models/wannier_input.py",
-        "tbj2/nodes/merge.py",
-        "tbj2/nodes/rotate.py",
-        "tbj2/nodes/siesta.py",
-        "tbj2/nodes/wannier_collinear.py",
-        "tbj2/nodes/wannier_spinor.py",
-        "vasp/lib/incar.py",
-        "vasp/lib/win.py",
-        "vasp/lib/write_inputs.py",
-        "vasp/lib/write_win.py",
-        "vasp/models/vasp_common.py",
-        "vasp/models/vasp_input.py",
-        "vasp/models/wannier90_input.py",
-        "vasp/nodes/run_vasp.py",
-        "vasp/nodes/run_wannier90.py",
-        "vasp/nodes/stage_tb2j.py",
-        "vasp/tests/test_vasp_cli_bindings.py"
-      ]
+      "files": []
     }
   ],
   "active": "Default"
