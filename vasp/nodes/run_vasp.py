@@ -6,21 +6,24 @@ from simstack.core.context import context
 from simstack.core.node import node
 from simstack.core.simstack_result import SimstackResult
 from simstack.models import FloatData
-from simstack.models.files import FileStack
 from vasp.lib.cli import attach_file
 from vasp.lib.outcar import parse_efermi
 from vasp.lib.write_inputs import write_vasp_inputs
 from vasp.models.vasp_input import VaspJobInput
 
 VASP_INPUT_FILES = ("INCAR", "KPOINTS", "POSCAR", "POTCAR")
-VASP_RESULT_FILES = (
+# Diagnostic / log outputs — go to info_files only.
+VASP_INFO_FILES = (
     "OUTCAR",
     "OSZICAR",
     "EIGENVAL",
     "CHGCAR",
     "WAVECAR",
     "vasprun.xml",
+    "CONTCAR",
 )
+# Passed to resource_config.run as expected products (union of info + pipeline globs).
+VASP_RESULT_FILES = VASP_INFO_FILES
 
 
 @node
@@ -31,11 +34,15 @@ async def vasp_run(opts: VaspJobInput, **kwargs) -> SimstackResult:
     Binary and launcher come from ``config.toml``
     (``[<resource>.program.vasp] run_command``). MPI size is taken from the
     Slurm allocation on ``kwargs["parent_parameters"]`` (do not pass a local
-    ``mpi_prefix``). Wannier90 interface files are collected when present.
-    Parses ``E-fermi`` from OUTCAR onto ``node_runner.efermi`` as ``FloatData``.
+    ``mpi_prefix``). Parses ``E-fermi`` from OUTCAR onto ``node_runner.efermi``.
+
+    Pipeline outputs (Wannier90 interface files) go to ``files`` with
+    ``in_memory=False`` and ``secure_source=True``. Inputs and diagnostic
+    VASP outputs go to ``info_files`` only.
 
     SimstackResult:
-        files (List[FileStack]): VASP outputs and Wannier90 interface files when present
+        files (List[FileStack]): Wannier90 interface files for downstream nodes
+        info_files (List[FileStack]): Inputs and diagnostic VASP outputs
         efermi (FloatData): Fermi energy from OUTCAR (eV), when parseable
     """
     node_runner = kwargs["node_runner"]
@@ -59,9 +66,9 @@ async def vasp_run(opts: VaspJobInput, **kwargs) -> SimstackResult:
                 f"(resource={getattr(context.resource_config, '_resource', '?')})"
             )
 
-        collected: list[FileStack] = []
         try:
-            collected.extend(write_vasp_inputs(opts, node_runner=node_runner))
+            # Attaches staged inputs to info_files only.
+            write_vasp_inputs(opts, node_runner=node_runner)
         except ValueError as exc:
             return node_runner.fail(str(exc))
 
@@ -79,23 +86,25 @@ async def vasp_run(opts: VaspJobInput, **kwargs) -> SimstackResult:
                 f"(run_command={program.get('run_command')!r})"
             )
 
-        for name in VASP_RESULT_FILES:
-            stack = attach_file(node_runner, name)
-            if stack:
-                collected.append(stack)
+        for name in VASP_INFO_FILES:
+            attach_file(node_runner, name, dest="info_files")
 
+        # Downstream Wannier90 needs .mmn / .amn / .eig (and related) on disk.
         for path in Path(".").glob("wannier90*"):
             if path.is_file():
-                stack = attach_file(node_runner, path)
-                if stack:
-                    collected.append(stack)
+                attach_file(
+                    node_runner,
+                    path,
+                    dest="files",
+                    in_memory=False,
+                    secure_source=True,
+                )
 
         efermi = parse_efermi(outcar_path)
         if efermi is not None:
             node_runner.efermi = FloatData(field_name="efermi", value=efermi)
             node_runner.info(f"E-fermi = {efermi} eV")
 
-        node_runner.files = collected
         return node_runner.succeed()
     except Exception as exc:
         node_runner.error(f"vasp_run: {exc}")

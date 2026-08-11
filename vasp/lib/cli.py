@@ -6,6 +6,7 @@ import os
 import shlex
 import shutil
 from pathlib import Path
+from typing import Literal
 
 from simstack.models.files import FileStack
 
@@ -43,13 +44,35 @@ def materialize_optional_file(
     return target
 
 
-def attach_file(node_runner, path: Path | str) -> FileStack | None:
-    """Attach an existing file to ``node_runner.info_files`` if present."""
+def attach_file(
+    node_runner,
+    path: Path | str,
+    *,
+    dest: Literal["info_files", "files"] = "info_files",
+    in_memory: bool | None = None,
+    secure_source: bool = True,
+    is_hashable: bool = True,
+) -> FileStack | None:
+    """
+    Attach an existing file to ``node_runner.info_files`` or ``node_runner.files``.
+
+    Pipeline outputs (``dest="files"``) default to ``in_memory=False`` with
+    ``secure_source=True``. Diagnostic / log outputs stay on ``info_files``
+    and default to ``in_memory=True``.
+    """
     p = Path(path)
     if not p.is_file():
         return None
+    if in_memory is None:
+        in_memory = dest == "info_files"
     stack = FileStack.from_local_file(
-        str(p), in_memory=True, is_hashable=True, secure_source=True
+        str(p),
+        in_memory=in_memory,
+        is_hashable=is_hashable,
+        secure_source=secure_source,
     )
-    node_runner.info_files.append(stack)
+    if dest == "files":
+        node_runner.files.append(stack)
+    else:
+        node_runner.info_files.append(stack)
     return stack

@@ -1,17 +1,72 @@
 ================================================================================
-Node: switch_git
-Function Mapping: simstack.methods.switch_git.switch_git
+Node: archive_upload
+Function Mapping: simstack.methods.upload_helpers.archive_upload
+Description: Asynchronously processes a file upload, extracts files from supported archive formats
+(.zip, .tar, .tar.gz), and returns a list of extracted files wrapped in FileStack
+instances. If the file is not an archive, it is added as-is to the output.
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  file_upload          | simstack.models.files.FileStack                    | The uploaded file to be processed.
+    **kwargs: Additional keyword arguments.
+
+Result Mappings:
+  (none)
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: file_list_upload_all
+Function Mapping: simstack.methods.upload_helpers.file_list_upload_all
 Description: WARNING: Missing description
 
 Input Mappings:
   Arg Name             | Model                                              | Field               
   ---------------------+----------------------------------------------------+---------------------
-  branch               | simstack.models.base_types.StringData              | None                
+  file_stack           | simstack.models.files.FileStack                    | None                
+
+Result Mappings:
+  (none)
+
+Called Nodes (Children):
+  - simstack.methods.upload_helpers.archive_upload
+  - simstack.methods.upload_helpers.file_list_upload_test
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: file_list_upload_test
+Function Mapping: simstack.methods.upload_helpers.file_list_upload_test
+Description: WARNING: Missing description
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  file_list            | simstack.models.file_list.FileListModel            | None                
+
+Result Mappings:
+  (none)
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: tb2j_siesta
+Function Mapping: tbj2.nodes.siesta.tb2j_siesta
+Description: Run ``siesta2J.py`` on Siesta Hamiltonian / overlap output.
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  opts                 | tbj2.models.siesta_input.SiestaInput               | None                
 
 Result Mappings:
   Arg Name             | Model                                              | Field               
   ---------------------+----------------------------------------------------+---------------------
-  result               | builtins.bool                                      | None                
+  files                | List[simstack.models.files.FileStack]              | : TB2J exchange-parameter output files
 
 Called Nodes (Children):
   (none)
@@ -38,6 +93,77 @@ Result Mappings:
 
 Called Nodes (Children):
   (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: tb2j_wannier_spinor
+Function Mapping: tbj2.nodes.wannier_spinor.tb2j_wannier_spinor
+Description: Run ``wann2J.py --spinor`` for non-collinear / SOC Wannier90 Hamiltonians.
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  opts                 | tbj2.models.wannier_input.WannierSpinorInput       | None                
+
+Result Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  files                | List[simstack.models.files.FileStack]              | : TB2J exchange-parameter output files
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: archive_file
+Function Mapping: simstack.methods.archive_files.archive_file
+Description: WARNING: Missing description
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  file_stack           | simstack.models.files.FileStack                    | None                
+
+Result Mappings:
+  (none)
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: archive_files
+Function Mapping: simstack.methods.archive_files.archive_files
+Description: WARNING: Missing description
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  file_list            | simstack.models.file_list.FileList                 | None                
+
+Result Mappings:
+  (none)
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: archive_node
+Function Mapping: simstack.methods.archive_files.archive_node
+Description: Archives FileStacks matching the criteria in archive_config and deletes local instances upon success.
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  archive_config       | simstack.methods.archive_files.ArchiveConfig       | Configuration for the archive process.
+    **kwargs: Additional arguments.
+
+Result Mappings:
+  (none)
+
+Called Nodes (Children):
+  - simstack.methods.archive_files.archive_files
 --------------------------------------------------------------------------------
 
 ================================================================================
@@ -99,14 +225,134 @@ Called Nodes (Children):
 --------------------------------------------------------------------------------
 
 ================================================================================
-Node: tb2j_wannier_spinor
-Function Mapping: tbj2.nodes.wannier_spinor.tb2j_wannier_spinor
-Description: Run ``wann2J.py --spinor`` for non-collinear / SOC Wannier90 Hamiltonians.
+Node: tb2j_merge
+Function Mapping: tbj2.nodes.merge.tb2j_merge
+Description: Run ``TB2J_merge.py`` on rotated TB2J result directories.
 
 Input Mappings:
   Arg Name             | Model                                              | Field               
   ---------------------+----------------------------------------------------+---------------------
-  opts                 | tbj2.models.wannier_input.WannierSpinorInput       | None                
+  opts                 | tbj2.models.merge_input.TB2JMergeInput             | None                
+
+Result Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  files                | List[simstack.models.files.FileStack]              | : Merged TB2J exchange-parameter output files
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: vasp_wannier_tb2j
+Function Mapping: master.nodes.vasp_wannier_tb2j.vasp_wannier_tb2j
+Description: Run the collinear or spinor magnetism pipeline end-to-end.
+
+1. ``vasp_run`` (expects ``LWANNIER90`` / interface files)
+2. ``wannier90_run``
+3. ``vasp_stage_wannier_for_tb2j`` (sets ``efermi`` as ``FloatData``)
+4. ``tb2j_wannier_collinear`` or ``tb2j_wannier_spinor``
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  opts                 | master.models.workflow_input.VaspWannierTB2JInput  | None                
+
+Result Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  files                | List[simstack.models.files.FileStack]              | : Aggregated files from VASP, Wannier90, and TB2J steps
+  efermi               | simstack.models.base_types.FloatData               | : Fermi energy (eV) used for TB2J
+
+Called Nodes (Children):
+  - tbj2.nodes.wannier_collinear.tb2j_wannier_collinear
+  - tbj2.nodes.wannier_spinor.tb2j_wannier_spinor
+  - vasp.nodes.run_vasp.vasp_run
+  - vasp.nodes.run_wannier90.wannier90_run
+  - vasp.nodes.stage_tb2j.vasp_stage_wannier_for_tb2j
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: switch_git
+Function Mapping: simstack.methods.switch_git.switch_git
+Description: WARNING: Missing description
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  branch               | simstack.models.base_types.StringData              | None                
+
+Result Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  result               | builtins.bool                                      | None                
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: get_file
+Function Mapping: simstack.methods.get_file.get_file
+Description: Retrieves a file from a given source and saves it to the specified target path.
+
+This function is responsible for handling the retrieval of files from a
+FileStack source and storing them to a local resource's target location.
+It will update the FileStack
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  file_getter_args     | simstack.models.files.FileGetterArgs               | The arguments for the file retrieval operation.
+
+Result Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  result               | simstack.models.files.FileStack                    | FileStack: The modified FileStack with the local resource.
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: vasp_run
+Function Mapping: vasp.nodes.run_vasp.vasp_run
+Description: Write INCAR/KPOINTS/POSCAR/POTCAR in cwd, then run ``program.vasp``.
+
+Binary and launcher come from ``config.toml``
+(``[<resource>.program.vasp] run_command``). MPI size is taken from the
+Slurm allocation on ``kwargs["parent_parameters"]`` (do not pass a local
+``mpi_prefix``). Parses ``E-fermi`` from OUTCAR onto ``node_runner.efermi``.
+
+Pipeline outputs (Wannier90 interface files) go to ``files`` with
+``in_memory=False`` and ``secure_source=True``. Inputs and diagnostic
+VASP outputs go to ``info_files`` only.
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  opts                 | vasp.models.vasp_input.VaspJobInput                | None                
+
+Result Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  files                | List[simstack.models.files.FileStack]              | : Wannier90 interface files for downstream nodes
+  info_files           | List[simstack.models.files.FileStack]              | : Inputs and diagnostic VASP outputs
+  efermi               | simstack.models.base_types.FloatData               | : Fermi energy from OUTCAR (eV), when parseable
+
+Called Nodes (Children):
+  (none)
+--------------------------------------------------------------------------------
+
+================================================================================
+Node: tb2j_wannier_collinear
+Function Mapping: tbj2.nodes.wannier_collinear.tb2j_wannier_collinear
+Description: Run ``wann2J.py`` for collinear (up/down) Wannier90 Hamiltonians.
+
+Input Mappings:
+  Arg Name             | Model                                              | Field               
+  ---------------------+----------------------------------------------------+---------------------
+  opts                 | tbj2.models.wannier_input.WannierCollinearInput    | None                
 
 Result Mappings:
   Arg Name             | Model                                              | Field               
@@ -143,219 +389,6 @@ Called Nodes (Children):
 --------------------------------------------------------------------------------
 
 ================================================================================
-Node: archive_file
-Function Mapping: simstack.methods.archive_files.archive_file
-Description: WARNING: Missing description
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  file_stack           | simstack.models.files.FileStack                    | None                
-
-Result Mappings:
-  (none)
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: archive_files
-Function Mapping: simstack.methods.archive_files.archive_files
-Description: WARNING: Missing description
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  file_list            | simstack.models.file_list.FileList                 | None                
-
-Result Mappings:
-  (none)
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: archive_node
-Function Mapping: simstack.methods.archive_files.archive_node
-Description: Archives FileStacks matching the criteria in archive_config and deletes local instances upon success.
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  archive_config       | simstack.methods.archive_files.ArchiveConfig       | Configuration for the archive process.
-    **kwargs: Additional arguments.
-
-Result Mappings:
-  (none)
-
-Called Nodes (Children):
-  - simstack.methods.archive_files.archive_files
---------------------------------------------------------------------------------
-
-================================================================================
-Node: tb2j_merge
-Function Mapping: tbj2.nodes.merge.tb2j_merge
-Description: Run ``TB2J_merge.py`` on rotated TB2J result directories.
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  opts                 | tbj2.models.merge_input.TB2JMergeInput             | None                
-
-Result Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  files                | List[simstack.models.files.FileStack]              | : Merged TB2J exchange-parameter output files
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: vasp_run
-Function Mapping: vasp.nodes.run_vasp.vasp_run
-Description: Write INCAR/KPOINTS/POSCAR/POTCAR in cwd, then run ``program.vasp``.
-
-Binary and launcher come from ``config.toml``
-(``[<resource>.program.vasp] run_command``). MPI size is taken from the
-Slurm allocation on ``kwargs["parent_parameters"]`` (do not pass a local
-``mpi_prefix``). Wannier90 interface files are collected when present.
-Parses ``E-fermi`` from OUTCAR onto ``node_runner.efermi`` as ``FloatData``.
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  opts                 | vasp.models.vasp_input.VaspJobInput                | None                
-
-Result Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  files                | List[simstack.models.files.FileStack]              | : VASP outputs and Wannier90 interface files when present
-  efermi               | simstack.models.base_types.FloatData               | : Fermi energy from OUTCAR (eV), when parseable
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: archive_upload
-Function Mapping: simstack.methods.upload_helpers.archive_upload
-Description: Asynchronously processes a file upload, extracts files from supported archive formats
-(.zip, .tar, .tar.gz), and returns a list of extracted files wrapped in FileStack
-instances. If the file is not an archive, it is added as-is to the output.
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  file_upload          | simstack.models.files.FileStack                    | The uploaded file to be processed.
-    **kwargs: Additional keyword arguments.
-
-Result Mappings:
-  (none)
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: file_list_upload_all
-Function Mapping: simstack.methods.upload_helpers.file_list_upload_all
-Description: WARNING: Missing description
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  file_stack           | simstack.models.files.FileStack                    | None                
-
-Result Mappings:
-  (none)
-
-Called Nodes (Children):
-  - simstack.methods.upload_helpers.archive_upload
-  - simstack.methods.upload_helpers.file_list_upload_test
---------------------------------------------------------------------------------
-
-================================================================================
-Node: file_list_upload_test
-Function Mapping: simstack.methods.upload_helpers.file_list_upload_test
-Description: WARNING: Missing description
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  file_list            | simstack.models.file_list.FileListModel            | None                
-
-Result Mappings:
-  (none)
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: get_file
-Function Mapping: simstack.methods.get_file.get_file
-Description: Retrieves a file from a given source and saves it to the specified target path.
-
-This function is responsible for handling the retrieval of files from a
-FileStack source and storing them to a local resource's target location.
-It will update the FileStack
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  file_getter_args     | simstack.models.files.FileGetterArgs               | The arguments for the file retrieval operation.
-
-Result Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  result               | simstack.models.files.FileStack                    | FileStack: The modified FileStack with the local resource.
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: tb2j_wannier_collinear
-Function Mapping: tbj2.nodes.wannier_collinear.tb2j_wannier_collinear
-Description: Run ``wann2J.py`` for collinear (up/down) Wannier90 Hamiltonians.
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  opts                 | tbj2.models.wannier_input.WannierCollinearInput    | None                
-
-Result Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  files                | List[simstack.models.files.FileStack]              | : TB2J exchange-parameter output files
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: tb2j_siesta
-Function Mapping: tbj2.nodes.siesta.tb2j_siesta
-Description: Run ``siesta2J.py`` on Siesta Hamiltonian / overlap output.
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  opts                 | tbj2.models.siesta_input.SiestaInput               | None                
-
-Result Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  files                | List[simstack.models.files.FileStack]              | : TB2J exchange-parameter output files
-
-Called Nodes (Children):
-  (none)
---------------------------------------------------------------------------------
-
-================================================================================
 Node: tb2j_rotate
 Function Mapping: tbj2.nodes.rotate.tb2j_rotate
 Description: Run ``TB2J_rotate.py`` to generate rotated crystal structures.
@@ -372,34 +405,5 @@ Result Mappings:
 
 Called Nodes (Children):
   (none)
---------------------------------------------------------------------------------
-
-================================================================================
-Node: vasp_wannier_tb2j
-Function Mapping: master.nodes.vasp_wannier_tb2j.vasp_wannier_tb2j
-Description: Run the collinear or spinor magnetism pipeline end-to-end.
-
-1. ``vasp_run`` (expects ``LWANNIER90`` / interface files)
-2. ``wannier90_run``
-3. ``vasp_stage_wannier_for_tb2j`` (sets ``efermi`` as ``FloatData``)
-4. ``tb2j_wannier_collinear`` or ``tb2j_wannier_spinor``
-
-Input Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  opts                 | master.models.workflow_input.VaspWannierTB2JInput  | None                
-
-Result Mappings:
-  Arg Name             | Model                                              | Field               
-  ---------------------+----------------------------------------------------+---------------------
-  files                | List[simstack.models.files.FileStack]              | : Aggregated files from VASP, Wannier90, and TB2J steps
-  efermi               | simstack.models.base_types.FloatData               | : Fermi energy (eV) used for TB2J
-
-Called Nodes (Children):
-  - tbj2.nodes.wannier_collinear.tb2j_wannier_collinear
-  - tbj2.nodes.wannier_spinor.tb2j_wannier_spinor
-  - vasp.nodes.run_vasp.vasp_run
-  - vasp.nodes.run_wannier90.wannier90_run
-  - vasp.nodes.stage_tb2j.vasp_stage_wannier_for_tb2j
 --------------------------------------------------------------------------------
 
