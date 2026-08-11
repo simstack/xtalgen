@@ -2,11 +2,11 @@
 
 from pathlib import Path
 
+from simstack.models import FileStack
 from vasp.lib.incar import render_incar
 from vasp.lib.kpoints import render_kpoints
 from vasp.lib.outcar import parse_efermi
 from vasp.lib.win import render_wannier90_win
-from vasp.lib.write_inputs import write_vasp_inputs
 from vasp.lib.write_win import write_wannier90_wins
 from vasp.models.vasp_common import KpointsStyle, VaspIncarParams, VaspKpointsParams
 from vasp.models.vasp_input import VaspJobInput
@@ -16,6 +16,17 @@ from vasp.models.wannier90_input import (
     Wannier90WinInput,
     Wannier90WinParams,
 )
+
+
+def _dummy_poscar_potcar(tmp_path: Path) -> tuple[FileStack, FileStack]:
+    pos = tmp_path / "POSCAR"
+    pot = tmp_path / "POTCAR"
+    pos.write_text("dummy POSCAR\n", encoding="utf-8")
+    pot.write_text("dummy POTCAR\n", encoding="utf-8")
+    return (
+        FileStack.from_local_file(str(pos), in_memory=True, is_hashable=True),
+        FileStack.from_local_file(str(pot), in_memory=True, is_hashable=True),
+    )
 
 
 def test_render_incar_wannier_flags():
@@ -36,17 +47,25 @@ def test_render_kpoints_gamma():
     assert "8 8 8" in text
 
 
-def test_vasp_job_input_texts():
+def test_vasp_job_input_texts(tmp_path):
+    poscar, potcar = _dummy_poscar_potcar(tmp_path)
     job = VaspJobInput(
         incar=VaspIncarParams(ispin=2, lwannier90=True),
         kpoints=VaspKpointsParams(nx=4, ny=4, nz=4),
+        poscar=poscar,
+        potcar=potcar,
     )
     assert "ISPIN = 2" in job.incar_text()
     assert "4 4 4" in job.kpoints_text()
 
 
-def test_vasp_job_input_is_top_level_model():
-    opts = VaspJobInput(incar=VaspIncarParams(encut=400, lsorbit=True))
+def test_vasp_job_input_is_top_level_model(tmp_path):
+    poscar, potcar = _dummy_poscar_potcar(tmp_path)
+    opts = VaspJobInput(
+        incar=VaspIncarParams(encut=400, lsorbit=True),
+        poscar=poscar,
+        potcar=potcar,
+    )
     assert opts.incar.encut == 400
     assert opts.incar.lsorbit is True
     assert opts.field_name == "VaspJobInput"
@@ -61,12 +80,21 @@ def test_wannier90_win_render():
         dis_win_min=-10.0,
         dis_win_max=10.0,
     )
+    assert params.use_dis_params is True
     text = render_wannier90_win(params)
     assert "num_wann = 28" in text
     assert "write_hr = true" in text
     assert "begin projections" in text
     assert "Mn: d" in text
     assert "dis_win_min = -10.0" in text
+
+    cleared = Wannier90WinParams(
+        use_dis_params=False,
+        dis_win_min=-10.0,
+        dis_win_max=10.0,
+    )
+    assert cleared.dis_win_min is None
+    assert "dis_win_min" not in render_wannier90_win(cleared)
 
 
 def test_wannier90_win_input_filename():
@@ -82,7 +110,9 @@ def test_wannier90_run_seednames_and_win():
     )
     assert opts.seednames() == ["wannier90.up", "wannier90.dn"]
     assert opts.win.num_wann == 10
-    assert opts.cli_args_for("wannier90.up") == ["wannier90.x", "wannier90.up"]
+    assert opts.write_win is True
+    assert opts.use_win_files is False
+    assert opts.win_files is None
 
 
 def test_parse_efermi(tmp_path):
@@ -94,21 +124,30 @@ def test_parse_efermi(tmp_path):
     assert parse_efermi(outcar) == 4.327
 
 
+def test_vasp_job_input_requires_poscar_potcar():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        VaspJobInput(
+            incar=VaspIncarParams(encut=300),
+            kpoints=VaspKpointsParams(nx=2, ny=2, nz=2),
+        )
+
+
 def test_write_vasp_inputs_helper(tmp_path):
+    poscar, potcar = _dummy_poscar_potcar(tmp_path)
     job = VaspJobInput(
         incar=VaspIncarParams(encut=300),
         kpoints=VaspKpointsParams(nx=2, ny=2, nz=2),
+        poscar=poscar,
+        potcar=potcar,
     )
-    try:
-        write_vasp_inputs(job, work_dir=tmp_path)
-        assert False, "expected ValueError for missing poscar"
-    except ValueError as exc:
-        assert "poscar" in str(exc).lower()
-
-    # INCAR/KPOINTS generation path (before poscar check writes them first —
-    # verify render via job helpers instead)
+    assert job.poscar is poscar
+    assert job.potcar is potcar
     assert "ENCUT = 300" in job.incar_text()
     assert "2 2 2" in job.kpoints_text()
+    # Full materialize path needs context.initialize(); covered in with_config tests.
 
 
 def test_write_wannier90_wins_helper(tmp_path):

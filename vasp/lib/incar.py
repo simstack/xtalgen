@@ -35,7 +35,7 @@ def render_incar(params: VaspIncarParams) -> str:
         f" NCORE = {params.ncore}",
         f" KPAR = {params.kpar}",
     ]
-    if params.nbands is not None:
+    if params.use_nbands and params.nbands is not None:
         lines.append(f" NBANDS = {params.nbands}")
     if params.gga:
         lines.append(f" GGA = {params.gga}")

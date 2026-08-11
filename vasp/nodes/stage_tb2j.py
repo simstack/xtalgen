@@ -1,11 +1,10 @@
 """Node: stage / verify Wannier90 outputs for TB2J wann2J nodes."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from simstack.core.node import node
 from simstack.core.simstack_result import SimstackResult
+from simstack.models import FloatData
 from simstack.models.files import FileStack
 from vasp.lib.cli import attach_file
 from vasp.lib.outcar import parse_efermi
@@ -25,6 +24,10 @@ async def vasp_stage_wannier_for_tb2j(
 
     Collinear: ``prefix_up`` / ``prefix_down``. Spinor: ``prefix_spinor``.
     Hand off to ``tbj2.tb2j_wannier_collinear`` / ``tbj2_wannier_spinor``.
+
+    SimstackResult:
+        files (List[FileStack]): Staged Wannier90 Hamiltonian / centres files for TB2J
+        efermi (FloatData): Fermi energy (eV) for wann2J
     """
     node_runner = kwargs["node_runner"]
     try:
@@ -56,7 +59,7 @@ async def vasp_stage_wannier_for_tb2j(
                 "efermi unknown: provide StageWannierForTB2JInput.efermi or OUTCAR"
             )
 
-        node_runner.efermi = efermi
+        node_runner.efermi = FloatData(field_name="efermi", value=efermi)
         node_runner.files = collected
         node_runner.info(f"staged Wannier for TB2J; efermi={efermi}")
         return node_runner.succeed()

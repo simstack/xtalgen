@@ -7,7 +7,7 @@ from typing import Optional
 from odmantic import Field, Model
 
 from simstack.models import FileStack, simstack_model
-from simstack.models.file_list import FileListIO
+from simstack.models.file_list import FileListModel
 from tbj2.lib.cli import append_common_args, append_flag
 from tbj2.models.tb2j_common import TB2JCommonParams
 
@@ -30,7 +30,7 @@ class SiestaInput(Model):
     efermi: Optional[float] = Field(
         None, description="Optional E_F override; usually read from Siesta output"
     )
-    input_files: Optional[FileListIO] = Field(
+    input_files: Optional[FileListModel] = Field(
         None, description="HS / NetCDF / related Siesta outputs to stage into cwd"
     )
 

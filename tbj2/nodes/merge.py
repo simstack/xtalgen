@@ -1,7 +1,5 @@
 """Node: merge rotated TB2J results via TB2J_merge.py."""
 
-from __future__ import annotations
-
 from simstack.core.node import node
 from simstack.core.simstack_result import SimstackResult
 from tbj2.lib.cli import command_string
@@ -11,7 +9,12 @@ from tbj2.models.merge_input import TB2JMergeInput
 
 @node
 async def tb2j_merge(opts: TB2JMergeInput, **kwargs) -> SimstackResult:
-    """Run ``TB2J_merge.py`` on rotated TB2J result directories."""
+    """
+    Run ``TB2J_merge.py`` on rotated TB2J result directories.
+
+    SimstackResult:
+        files (List[FileStack]): Merged TB2J exchange-parameter output files
+    """
     node_runner = kwargs["node_runner"]
     try:
         args = opts.cli_args()

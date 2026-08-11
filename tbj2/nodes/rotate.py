@@ -1,7 +1,5 @@
 """Node: prepare rotated structures via TB2J_rotate.py."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from simstack.core.node import node
@@ -13,7 +11,12 @@ from tbj2.models.rotate_input import TB2JRotateInput
 
 @node
 async def tb2j_rotate(opts: TB2JRotateInput, **kwargs) -> SimstackResult:
-    """Run ``TB2J_rotate.py`` to generate rotated crystal structures."""
+    """
+    Run ``TB2J_rotate.py`` to generate rotated crystal structures.
+
+    SimstackResult:
+        files (List[FileStack]): Rotated ``atoms_*`` structure files
+    """
     node_runner = kwargs["node_runner"]
     try:
         structure = materialize_optional_file(opts.structure, local_dir=Path("."))

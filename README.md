@@ -4,6 +4,7 @@ Capability package for crystal magnetism workflows:
 
 - [`vasp`](vasp/) — VASP run + Wannier90 (write helpers inside run nodes)
 - [`tbj2`](tbj2/) — [TB2J](https://github.com/mailhexu/TB2J) exchange parameters
+- [`master`](master/) — end-to-end VASP → Wannier90 → TB2J orchestration
 
 Upstream examples (not vendored): [TB2J_examples](https://github.com/mailhexu/TB2J_examples).
 
@@ -14,6 +15,7 @@ xtalgen/
   pyproject.toml
   vasp/                 # import vasp
   tbj2/                 # import tbj2
+  master/               # import master
 ```
 
 ## Install
@@ -23,7 +25,7 @@ uv sync                 # from this directory
 # or: uv pip install -e ".[dev]"
 ```
 
-Pulls editable `simstack` from `../simstack` and [TB2J](https://github.com/mailhexu/TB2J)
+Pulls [simstack](https://github.com/simstack/simstack) `v2.0.1` and [TB2J](https://github.com/mailhexu/TB2J)
 from GitHub. Upstream hard-deps `sisl` / `pypao` are excluded for the Wannier path
 (`tool.uv.exclude-dependencies`); add `--extra siesta` when you need Siesta.
 
@@ -64,14 +66,16 @@ Binary / launcher: `[<resource>.program.vasp] run_command` in `config.toml`
 `parent_parameters.slurm_parameters` on the job allocation — not from the input model.
 Workdir is always cwd.
 
-Typical collinear flow (SrMnO3-style):
+Typical collinear flow (SrMnO3-style) — use master node `vasp_wannier_tb2j`
+(`VaspWannierTB2JInput`) or the steps individually:
 
 1. `vasp_run` (`VaspJobInput` with `LWANNIER90`; stage `.win` via `extra_files` or write later)
 2. `wannier90_run` (`channels="wannier90.up wannier90.dn"`, `write_win=True`)
 3. `vasp_stage_wannier_for_tb2j`
 4. `tbj2_wannier_collinear` (from `tbj2`)
 
-SOC / spinor: set `LSORBIT`, point `run_command` at `vasp_ncl`, run seed `wannier90`, then `tbj2_wannier_spinor`.
+SOC / spinor: set `collinear=False` on the master input (and `LSORBIT` /
+`vasp_ncl` in config), or run seed `wannier90` then `tbj2_wannier_spinor`.
 
 **License note:** VASP and PAW `POTCAR` files are proprietary and are **not** shipped.
 
@@ -88,10 +92,8 @@ SOC / spinor: set `LSORBIT`, point `run_command` at `vasp_ncl`, run seed `wannie
 ## Register
 
 ```bash
-uv run create_model_table --dir xtalgen/vasp
-uv run create_node_table --dir xtalgen/vasp
-uv run create_model_table --dir xtalgen/tbj2
-uv run create_node_table --dir xtalgen/tbj2
+uv run create_model_table --dir vasp --dir tbj2 --dir master
+uv run create_node_table --dir vasp --dir tbj2 --dir master
 ```
 
 Docs: https://tb2j.readthedocs.io/en/latest/ · https://www.vasp.at/

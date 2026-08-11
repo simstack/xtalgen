@@ -1,12 +1,11 @@
 """Node: write VASP inputs then run via config.toml ``program.vasp``."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from simstack.core.context import context
 from simstack.core.node import node
 from simstack.core.simstack_result import SimstackResult
+from simstack.models import FloatData
 from simstack.models.files import FileStack
 from vasp.lib.cli import attach_file
 from vasp.lib.outcar import parse_efermi
@@ -33,7 +32,11 @@ async def vasp_run(opts: VaspJobInput, **kwargs) -> SimstackResult:
     (``[<resource>.program.vasp] run_command``). MPI size is taken from the
     Slurm allocation on ``kwargs["parent_parameters"]`` (do not pass a local
     ``mpi_prefix``). Wannier90 interface files are collected when present.
-    Parses ``E-fermi`` from OUTCAR onto ``node_runner.efermi``.
+    Parses ``E-fermi`` from OUTCAR onto ``node_runner.efermi`` as ``FloatData``.
+
+    SimstackResult:
+        files (List[FileStack]): VASP outputs and Wannier90 interface files when present
+        efermi (FloatData): Fermi energy from OUTCAR (eV), when parseable
     """
     node_runner = kwargs["node_runner"]
     try:
@@ -89,7 +92,7 @@ async def vasp_run(opts: VaspJobInput, **kwargs) -> SimstackResult:
 
         efermi = parse_efermi(outcar_path)
         if efermi is not None:
-            node_runner.efermi = efermi
+            node_runner.efermi = FloatData(field_name="efermi", value=efermi)
             node_runner.info(f"E-fermi = {efermi} eV")
 
         node_runner.files = collected

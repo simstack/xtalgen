@@ -8,7 +8,7 @@ from typing import Optional
 from odmantic import Field, Model
 
 from simstack.models import FileStack, simstack_model
-from simstack.models.file_list import FileListIO
+from simstack.models.file_list import FileListModel
 from tbj2.lib.cli import append_common_args, append_flag
 from tbj2.models.tb2j_common import TB2JCommonParams
 
@@ -31,7 +31,7 @@ class WannierCollinearInput(Model):
     posfile: Optional[FileStack] = Field(
         None, description="Optional structure file (POSCAR, .pwi, …)"
     )
-    input_files: Optional[FileListIO] = Field(
+    input_files: Optional[FileListModel] = Field(
         None, description="Wannier90 outputs to stage into path (hr/centres/tb/win)"
     )
 
@@ -62,7 +62,7 @@ class WannierSpinorInput(Model):
     posfile: Optional[FileStack] = Field(
         None, description="Optional structure file (POSCAR, .pwi, …)"
     )
-    input_files: Optional[FileListIO] = Field(
+    input_files: Optional[FileListModel] = Field(
         None, description="Wannier90 outputs to stage into path"
     )
 

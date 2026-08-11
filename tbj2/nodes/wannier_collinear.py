@@ -1,7 +1,5 @@
 """Node: collinear Wannier90 → exchange parameters via wann2J.py."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from simstack.core.node import node
@@ -13,14 +11,19 @@ from tbj2.models.wannier_input import WannierCollinearInput
 
 @node
 async def tb2j_wannier_collinear(opts: WannierCollinearInput, **kwargs) -> SimstackResult:
-    """Run ``wann2J.py`` for collinear (up/down) Wannier90 Hamiltonians."""
+    """
+    Run ``wann2J.py`` for collinear (up/down) Wannier90 Hamiltonians.
+
+    SimstackResult:
+        files (List[FileStack]): TB2J exchange-parameter output files
+    """
     node_runner = kwargs["node_runner"]
     try:
         work = Path(opts.path)
         work.mkdir(parents=True, exist_ok=True)
 
-        if opts.input_files is not None and opts.input_files.file_list:
-            materialize_file_list(opts.input_files.file_list, local_dir=work)
+        if opts.input_files is not None:
+            materialize_file_list(opts.input_files, local_dir=work)
 
         pos = materialize_optional_file(opts.posfile, local_dir=work)
         posfile_name = str(pos) if pos is not None else None

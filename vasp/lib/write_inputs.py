@@ -56,7 +56,7 @@ def write_vasp_inputs(
 
     pos = materialize_optional_file(job.poscar, local_dir=work, preferred_name="POSCAR")
     if pos is None:
-        raise ValueError("poscar FileStack is required")
+        raise ValueError("poscar FileStack failed to materialize")
     if node_runner is not None:
         stack = attach_file(node_runner, pos)
         if stack:
@@ -64,16 +64,15 @@ def write_vasp_inputs(
 
     pot = materialize_optional_file(job.potcar, local_dir=work, preferred_name="POTCAR")
     if pot is None:
-        raise ValueError(
-            "potcar FileStack is required (licensed PAW potentials are not shipped)"
-        )
+        raise ValueError("potcar FileStack failed to materialize")
     if node_runner is not None:
         stack = attach_file(node_runner, pot)
         if stack:
             collected.append(stack)
 
-    if job.extra_files is not None and job.extra_files.file_list:
-        for fs in job.extra_files.file_list:
+    if job.use_extra_files and job.extra_files is not None:
+        staged = list(job.extra_files)
+        for fs in staged:
             path = materialize_optional_file(fs, local_dir=work)
             if path is not None and node_runner is not None:
                 stack = attach_file(node_runner, path)

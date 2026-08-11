@@ -30,17 +30,23 @@ def render_wannier90_win(params: Wannier90WinParams) -> str:
         f"write_tb = {_bool(params.write_tb)}",
         f"spinors = {_bool(params.spinors)}",
     ]
-    if params.dis_win_min is not None:
-        lines.append(f"dis_win_min = {params.dis_win_min}")
-    if params.dis_win_max is not None:
-        lines.append(f"dis_win_max = {params.dis_win_max}")
-    if params.dis_froz_min is not None:
-        lines.append(f"dis_froz_min = {params.dis_froz_min}")
-    if params.dis_froz_max is not None:
-        lines.append(f"dis_froz_max = {params.dis_froz_max}")
+    if params.use_dis_params:
+        if params.dis_win_min is not None:
+            lines.append(f"dis_win_min = {params.dis_win_min}")
+        if params.dis_win_max is not None:
+            lines.append(f"dis_win_max = {params.dis_win_max}")
+        if params.dis_froz_min is not None:
+            lines.append(f"dis_froz_min = {params.dis_froz_min}")
+        if params.dis_froz_max is not None:
+            lines.append(f"dis_froz_max = {params.dis_froz_max}")
     if params.exclude_bands.strip():
         lines.append(f"exclude_bands = {params.exclude_bands.strip()}")
-    if params.mp_grid_x and params.mp_grid_y and params.mp_grid_z:
+    if (
+        params.use_grid
+        and params.mp_grid_x
+        and params.mp_grid_y
+        and params.mp_grid_z
+    ):
         lines.append(
             f"mp_grid = {params.mp_grid_x} {params.mp_grid_y} {params.mp_grid_z}"
         )

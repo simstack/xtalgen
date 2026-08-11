@@ -1,0 +1,60 @@
+# xtalgen resource config (recipe: ../simstack-model/config.toml)
+# VASP on JUSTUS2: https://wiki.bwhpc.de/e/JUSTUS2/Software/VASP
+active_dirs = ["vasp", "tbj2", "master"]
+
+#
+# Local (binary on PATH; licensed — not shipped)
+#
+[local]
+os = "windows"
+[local.setup]
+scripts = [
+    "set USER=%USERNAME%",
+    "set SIMSTACK_DIR=%CD%"
+]
+tmp_base_dir = "set TMP_BASE_DIR=C:\\Users\\bj7610\\AppData\\Local\\Temp"
+[local.post-processing]
+scratch_cleanup = true
+
+# Use vasp_ncl when LSORBIT / non-collinear.
+[local.program.vasp]
+use_tmp = false
+run_command = "vasp_std"
+
+[local.program.wannier90]
+use_tmp = false
+run_command = "wannier90.x"
+
+#
+# JUSTUS2 (justus2.uni-ulm.de) — resource_str "justus"
+#
+[justus]
+[justus.setup]
+scripts = [
+    "export MKL_NUM_THREADS=1; export OMP_NUM_THREADS=1"
+]
+# Multi-node VASP needs a shared filesystem; prefer $SCRATCH over /tmp.
+tmp_base_dir = """
+if test -n "${SCRATCH}" -a -e "${SCRATCH}" -a -d "${SCRATCH}" -a "${SCRATCH}" != "/scratch" -a "${SCRATCH}" != "/tmp" -a "${SCRATCH}" != "/ramdisk"; then
+  TMP_BASE_DIR="${SCRATCH}"
+else
+  TMP_BASE_DIR="${TMPDIR:-/tmp/${USER}}"
+fi
+"""
+[justus.post-processing]
+scratch_cleanup = true
+
+# module load chem/vasp  (do not pre-load compiler/mpi — the module pulls deps)
+# Available: 5.4.4.3.16052018, 6.2.1, 6.4.3, 6.5.1 — pin e.g. chem/vasp/6.5.1 if needed.
+# The module's `vasp` launcher selects serial vs MPI from the Slurm allocation.
+# ResourceConfig.run executes only run_command, so module load is inlined here.
+# For SOC / LSORBIT: use "... && srun vasp_ncl" instead of "... && vasp".
+[justus.program.vasp]
+use_tmp = false
+environment_modules = ["chem/vasp"]
+run_command = "module purge && module load chem/vasp && vasp"
+
+# Wannier90 seedname is appended by wannier90_run (e.g. "… && wannier90.x wannier90.up").
+[justus.program.wannier90]
+use_tmp = false
+run_command = "module purge && module load chem/wannier90 && wannier90.x"

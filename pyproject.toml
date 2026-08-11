@@ -3,7 +3,7 @@ name = "xtalgen"
 version = "0.2.0"
 description = "Crystal / magnetism DFT wrappers (VASP, Wannier90, TB2J) for Simstack"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
 authors = [
   { name = "Wolfgang Wenzel", email = "wolfgang.wenzel@kit.edu" }
@@ -25,6 +25,7 @@ siesta = [
 ]
 
 [project.entry-points."simstack.modules"]
+master = "master"
 tbj2 = "tbj2"
 vasp = "vasp"
 
@@ -36,23 +37,10 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-bypass-selection = true
-
-[tool.hatch.build.targets.wheel.force-include]
-"tbj2/__init__.py" = "tbj2/__init__.py"
-"tbj2/nodes" = "tbj2/nodes"
-"tbj2/models" = "tbj2/models"
-"tbj2/lib" = "tbj2/lib"
-"tbj2/testing" = "tbj2/testing"
-"vasp/__init__.py" = "vasp/__init__.py"
-"vasp/nodes" = "vasp/nodes"
-"vasp/models" = "vasp/models"
-"vasp/lib" = "vasp/lib"
-"vasp/testing" = "vasp/testing"
+packages = ["master", "tbj2", "vasp"]
 
 [tool.uv.sources]
-# Sibling tree when xtalgen lives under simstack-model; override for standalone clones.
-simstack = { path = "../simstack", editable = true }
+simstack = { git = "https://github.com/simstack/simstack.git", tag = "v2.0.1" }
 TB2J = { git = "https://github.com/mailhexu/TB2J.git" }
 
 [tool.uv]
