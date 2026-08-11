@@ -3,7 +3,7 @@
     {
       "name": "Default",
       "files": [
-        "pyproject.toml"
+        "vasp/testing/minimal_vasp_run.py"
       ]
     }
   ],

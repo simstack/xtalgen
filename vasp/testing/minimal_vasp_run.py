@@ -45,7 +45,7 @@ def minimal_vasp_job_input(
     *,
     poscar: FileStack | None = None,
     potcar: FileStack | None = None,
-    potcar_autobuild: bool = False,
+    potcar_autobuild: bool = True,
     incar: VaspIncarParams | None = None,
     kpoints: VaspKpointsParams | None = None,
 ) -> VaspJobInput:
