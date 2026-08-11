@@ -14,7 +14,21 @@ from vasp.nodes.run_vasp import vasp_run
 
 _FIXTURE_DIR = Path(__file__).resolve().parent
 POSCAR_PATH = _FIXTURE_DIR / "POSCAR"
+# Optional on-disk location (gitignored); stub content lives in code.
 POTCAR_PATH = _FIXTURE_DIR / "POTCAR"
+
+# Not a licensed PAW potential — staging / unit tests only.
+_POTCAR_STUB = """\
+  TEST_STUB Fe — not a licensed VASP PAW potential; staging / unit tests only
+   8.0000000000000000
+ parameters from PSCTR are:
+   VRHFIN =Fe: TEST
+   LEXCH  = PE
+   EATOM  =    0.0000 eV,    0.0000 Ry
+ END of PSCTR-controll parameters
+   0.00000000
+END of TEST_STUB POTCAR for Fe
+"""
 
 
 def fixture_poscar(*, in_memory: bool = True) -> FileStack:
@@ -26,13 +40,16 @@ def fixture_poscar(*, in_memory: bool = True) -> FileStack:
 
 def fixture_potcar(*, in_memory: bool = True) -> FileStack:
     """
-    Load the bundled POTCAR **test stub** as a FileStack.
+    Build a POTCAR **test stub** as a FileStack (not a licensed PAW potential).
 
-    This is not a licensed PAW potential; replace with a real POTCAR for
-    production DFT runs.
+    Replace with a real POTCAR for production DFT runs. The stub is not
+    tracked in git; content is embedded here.
     """
+    if in_memory:
+        return FileStack.from_string(_POTCAR_STUB, "POTCAR")
+    POTCAR_PATH.write_text(_POTCAR_STUB, encoding="utf-8")
     return FileStack.from_local_file(
-        str(POTCAR_PATH), in_memory=in_memory, is_hashable=True
+        str(POTCAR_PATH), in_memory=False, is_hashable=True
     )
 
 
