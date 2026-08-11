@@ -58,3 +58,30 @@ run_command = "module purge && module load chem/vasp && vasp"
 [justus.program.wannier90]
 use_tmp = false
 run_command = "module purge && module load chem/wannier90 && wannier90.x"
+
+# xtalgen-int-nano — resource_str / runner "xtalgen-int-nano"
+# module: vasp/5.4.4 (loads intel + impi; potcars via $VASP_POTCAR / $VASP_PP_PATH)
+# Binaries on PATH after `module load vasp`: vasp_std, vasp_gam, vasp_ncl
+# ($VASP / $VASPMPI are unset on this site — do not rely on them.)
+# Parallel wrapper from the module: $DO_PARALLEL = mpiexec.hydra … -np 4
+#
+[xtalgen-int-nano]
+[xtalgen-int-nano.setup]
+scripts = [
+    "export MKL_NUM_THREADS=1; export OMP_NUM_THREADS=1"
+]
+# Cluster scratch is /scratch; first VASP tests run in cwd (use_tmp=false below).
+tmp_base_dir = "TMP_BASE_DIR=/scratch/${USER}"
+[xtalgen-int-nano.post-processing]
+scratch_cleanup = true
+
+# First tests: serial vasp_std. For MPI: "... && $DO_PARALLEL vasp_std"
+# Gamma: vasp_gam · SOC/ncl: vasp_ncl
+[xtalgen-int-nano.program.vasp]
+use_tmp = false
+environment_modules = ["vasp"]
+run_command = "module load vasp && vasp_std"
+
+[xtalgen-int-nano.program.wannier90]
+use_tmp = false
+run_command = "module load wannier90 && wannier90.x"
