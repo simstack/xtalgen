@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from simstack.core.context import context
@@ -15,21 +14,8 @@ from vasp.nodes.run_vasp import vasp_run
 
 _FIXTURE_DIR = Path(__file__).resolve().parent
 POSCAR_PATH = _FIXTURE_DIR / "POSCAR"
-# Optional on-disk location (gitignored); stub content lives in code.
+# Gitignored — copy a real PAW POTCAR here for cluster / integration runs.
 POTCAR_PATH = _FIXTURE_DIR / "POTCAR"
-
-# Not a licensed PAW potential — staging / unit tests only.
-_POTCAR_STUB = """\
-  TEST_STUB Fe — not a licensed VASP PAW potential; staging / unit tests only
-   8.0000000000000000
- parameters from PSCTR are:
-   VRHFIN =Fe: TEST
-   LEXCH  = PE
-   EATOM  =    0.0000 eV,    0.0000 Ry
- END of PSCTR-controll parameters
-   0.00000000
-END of TEST_STUB POTCAR for Fe
-"""
 
 
 def fixture_poscar(*, in_memory: bool = True) -> FileStack:
@@ -41,39 +27,19 @@ def fixture_poscar(*, in_memory: bool = True) -> FileStack:
 
 def fixture_potcar(*, in_memory: bool = True) -> FileStack:
     """
-    Load a POTCAR FileStack for tests.
+    Load ``vasp/testing/POTCAR`` as a FileStack.
 
-    Prefer (in order):
-    1. ``vasp/testing/POTCAR`` on disk (gitignored — copy a real PAW file there)
-    2. ``$VASP_POTCAR`` / ``$VASP_PP_PATH`` Fe potential (``potpaw_PBE.54/Fe/POTCAR``)
-    3. Embedded stub (unit tests only — VASP will EOF on a real run)
+    Raises ``FileNotFoundError`` if the file is missing. Copy a licensed PAW
+    potential there (e.g. from ``$VASP_HOME/../potpaw_PBE.54/Fe/POTCAR``).
     """
-    if POTCAR_PATH.is_file() and POTCAR_PATH.stat().st_size > 200:
-        return FileStack.from_local_file(
-            str(POTCAR_PATH), in_memory=in_memory, is_hashable=True
+    if not POTCAR_PATH.is_file():
+        raise FileNotFoundError(
+            f"Missing real POTCAR at {POTCAR_PATH}. "
+            "Copy a PAW potential from the VASP install "
+            "(e.g. potpaw_PBE.54/Fe/POTCAR); it is gitignored and not shipped."
         )
-
-    for env in ("VASP_POTCAR", "VASP_PP_PATH"):
-        root = Path(os.environ[env]) if env in os.environ else None
-        if root is None or not root.is_dir():
-            continue
-        for rel in (
-            "potpaw_PBE.54/Fe/POTCAR",
-            "potpaw_PBE/Fe/POTCAR",
-            "potpaw_PBE.52/Fe/POTCAR",
-            "Fe/POTCAR",
-        ):
-            candidate = root / rel
-            if candidate.is_file():
-                return FileStack.from_local_file(
-                    str(candidate), in_memory=in_memory, is_hashable=True
-                )
-
-    if in_memory:
-        return FileStack.from_string(_POTCAR_STUB, "POTCAR")
-    POTCAR_PATH.write_text(_POTCAR_STUB, encoding="utf-8")
     return FileStack.from_local_file(
-        str(POTCAR_PATH), in_memory=False, is_hashable=True
+        str(POTCAR_PATH), in_memory=in_memory, is_hashable=True
     )
 
 
@@ -116,9 +82,9 @@ async def submit_minimal_vasp_run(
     """
     Initialize context and submit a minimal ``vasp_run`` job.
 
-    Uses ``vasp/testing/POSCAR`` and the POTCAR test stub unless ``opts`` is
-    provided. Requires ``[<resource>.program.vasp] run_command`` in config.toml
-    and a VASP binary on PATH (or via the configured launcher).
+    Uses ``vasp/testing/POSCAR`` and ``vasp/testing/POTCAR`` unless ``opts`` is
+    provided. Requires a real POTCAR on disk and
+    ``[<resource>.program.vasp] run_command`` in config.toml.
     """
     await context.initialize()
     parameters = Parameters(resource=resource, force_rerun=force_rerun)
