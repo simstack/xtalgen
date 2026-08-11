@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from simstack.core.context import context
@@ -40,11 +41,34 @@ def fixture_poscar(*, in_memory: bool = True) -> FileStack:
 
 def fixture_potcar(*, in_memory: bool = True) -> FileStack:
     """
-    Build a POTCAR **test stub** as a FileStack (not a licensed PAW potential).
+    Load a POTCAR FileStack for tests.
 
-    Replace with a real POTCAR for production DFT runs. The stub is not
-    tracked in git; content is embedded here.
+    Prefer (in order):
+    1. ``vasp/testing/POTCAR`` on disk (gitignored — copy a real PAW file there)
+    2. ``$VASP_POTCAR`` / ``$VASP_PP_PATH`` Fe potential (``potpaw_PBE.54/Fe/POTCAR``)
+    3. Embedded stub (unit tests only — VASP will EOF on a real run)
     """
+    if POTCAR_PATH.is_file() and POTCAR_PATH.stat().st_size > 200:
+        return FileStack.from_local_file(
+            str(POTCAR_PATH), in_memory=in_memory, is_hashable=True
+        )
+
+    for env in ("VASP_POTCAR", "VASP_PP_PATH"):
+        root = Path(os.environ[env]) if env in os.environ else None
+        if root is None or not root.is_dir():
+            continue
+        for rel in (
+            "potpaw_PBE.54/Fe/POTCAR",
+            "potpaw_PBE/Fe/POTCAR",
+            "potpaw_PBE.52/Fe/POTCAR",
+            "Fe/POTCAR",
+        ):
+            candidate = root / rel
+            if candidate.is_file():
+                return FileStack.from_local_file(
+                    str(candidate), in_memory=in_memory, is_hashable=True
+                )
+
     if in_memory:
         return FileStack.from_string(_POTCAR_STUB, "POTCAR")
     POTCAR_PATH.write_text(_POTCAR_STUB, encoding="utf-8")
