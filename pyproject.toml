@@ -47,6 +47,14 @@ TB2J = { git = "https://github.com/mailhexu/TB2J.git" }
 # sisl needs a native build (fails on Windows); pypao is not on PyPI; pre-commit is a
 # misplaced hard dep upstream. Wannier workflows do not need any of these.
 exclude-dependencies = ["sisl", "pypao", "pre-commit"]
+# HPC / older glibc (e.g. int-nano): recent pillow/h5py/netcdf4 only ship
+# manylinux_2_28 wheels; without a match uv builds from source and fails.
+# Keep last releases that still publish manylinux2014 / manylinux_2_17 wheels.
+constraint-dependencies = [
+    "pillow<12.3",
+    "h5py<3.15",
+    "netcdf4<=1.7.2",
+]
 
 # version is required for Git dependencies (matches TB2J's pyproject on main).
 [[tool.uv.dependency-metadata]]
